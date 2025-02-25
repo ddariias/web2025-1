@@ -1,2 +1,3 @@
 Частина 1. http:// backend.course:80/ddariias
 Частина 2. http://%20backend.course:80?name=%E2%80%9C%D0%94%D1%96%D0%B4%D0%B8%D0%BA%20%D0%94%D0%B0%D1%80%D1%96%D1%8F%E2%80%9D&github_name=%E2%80%9Cddariias%E2%80%9D&group=%E2%80%9C%D0%A4%D0%95%D0%9F-23%D1%81%E2%80%9D&subgroup=%E2%80%9C%D0%9F%D1%96%D0%B4%D0%B3%D1%80%D1%83%D0%BF%D0%B0%201%E2%80%9D
+Частина 3. https://bank.gov.ua/NBUStatService/v1/statdirectory/exchangenew?date=20240127&valcode=JPY&json
