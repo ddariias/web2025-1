@@ -8,5 +8,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "commander": "^13.1.0",
+    "fast-xml-parser": "^5.0.9"
+  }
 }
