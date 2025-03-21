@@ -1,14 +1,14 @@
 const http = require('http');
 const fs = require('fs');
 const { Command } = require('commander');
-const { XMLBuilder } = require('fast-xml-parser');
+const { XMLParser, XMLBuilder } = require('fast-xml-parser');
 
 const program = new Command();
 
 program
   .requiredOption('-h, --host <string>', 'Адреса сервера')
   .requiredOption('-p, --port <number>', 'Порт сервера', parseInt)
-  .requiredOption('-i, --input <path>', 'Шлях до JSON-файлу з даними НБУ')
+  .requiredOption('-i, --input <path>', 'Шлях до XML-файлу з даними облігацій')
   .parse(process.argv);
 
 const options = program.opts();
@@ -19,7 +19,7 @@ if (!fs.existsSync(options.input)) {
 }
 
 const handleRequest = (req, res) => {
-  fs.readFile(options.input, 'utf-8', (err, jsonData) => {
+  fs.readFile(options.input, 'utf-8', (err, data) => {
     if (err) {
       console.error('Error reading input file:', err);
       res.writeHead(500, { 'Content-Type': 'text/plain' });
@@ -27,25 +27,26 @@ const handleRequest = (req, res) => {
       return;
     }
 
-    let jsonObj = JSON.parse(jsonData);
+    const parser = new XMLParser();
+    const jsonObj = parser.parse(data);
 
-    jsonObj.forEach((item) => {
-      if (!item.hasOwnProperty('r030')) item.r030 = '';
-      if (!item.hasOwnProperty('txt')) item.txt = '';
-      if (!item.hasOwnProperty('rate')) item.rate = 0;
-      if (!item.hasOwnProperty('cc')) item.cc = '';
-      if (!item.hasOwnProperty('exchangedate')) item.exchangedate = '';
+    const xmlData = jsonObj.auctions.auction.map((auction) => {
+      return {
+        StockCode: auction.StockCode,
+        ValCode: auction.ValCode,
+        Attraction: auction.Attraction,
+      };
     });
 
     const builder = new XMLBuilder({
-      ignoreAttributes: false, 
-      format: true, 
+      ignoreAttributes: false,
+      format: true,
     });
 
-    const xmlContent = builder.build({ currencies: { currency: jsonObj } });
+    const newXml = builder.build({ data: { auction: xmlData } });
 
     res.writeHead(200, { 'Content-Type': 'application/xml' });
-    res.end(xmlContent);
+    res.end(newXml);
   });
 };
 
