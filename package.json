@@ -1,0 +1,27 @@
+{
+  "name": "web2025-1",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "commander": "^13.1.0",
+    "superagent": "^10.2.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ddariias/web2025-1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ddariias/web2025-1/issues"
+  },
+  "homepage": "https://github.com/ddariias/web2025-1#readme",
+  "description": "",
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
