@@ -1,6 +1,7 @@
 const http = require('http');
-const { Command } = require('commander');
 const fs = require('fs');
+const path = require('path');
+const { Command } = require('commander');
 
 const program = new Command();
 
@@ -11,34 +12,40 @@ program
   .requiredOption('-c, --cache <cache>', 'Path to cache directory')
   .parse(process.argv);
 
-console.log('Parsed arguments:', program.opts());
-
 const { host, port, cache } = program.opts();
 
-console.log(`Received arguments: Host - ${host}, Port - ${port}, Cache directory - ${cache}`);
-
-if (!host || !port || !cache) {
-  console.error('Error: Missing required arguments');
-  process.exit(1);
-}
+console.log(`Server will run on: ${host}:${port}`);
+console.log(`Cache directory is: ${cache}`);
 
 if (!fs.existsSync(cache)) {
   console.error(`Error: Cache directory does not exist: ${cache}`);
-  console.log('Attempting to create the directory...');
-  
-  fs.mkdirSync(cache, { recursive: true });
-  console.log(`Directory "${cache}" has been created.`);
+  process.exit(1);
 }
 
-console.log(`Cache directory "${cache}" exists, proceeding to create the server...`);
+const server = http.createServer(async (req, res) => {
+  const urlParts = req.url.split('/');
+  const statusCode = urlParts[1];
 
-const server = http.createServer((req, res) => {
-  console.log('Received request:', req.method, req.url); 
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Server is running\n');
+  if (req.method === 'GET') {
+    if (statusCode) {
+      const imagePath = path.join(cache, `${statusCode}.jpg`);
+
+      if (fs.existsSync(imagePath)) {
+        res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+        fs.createReadStream(imagePath).pipe(res);
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not Found');
+      }
+    } else {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Bad Request');
+    }
+  } else {
+    res.writeHead(405, { 'Content-Type': 'text/plain' });
+    res.end('Method Not Allowed');
+  }
 });
-
-console.log(`Starting server at ${host}:${port}...`);
 
 server.listen(port, host, () => {
   console.log(`Server running at http://${host}:${port}/`);
