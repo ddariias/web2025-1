@@ -41,6 +41,27 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(400, { 'Content-Type': 'text/plain' });
       res.end('Bad Request');
     }
+  } else if (req.method === 'PUT') {
+    if (statusCode) {
+      const imagePath = path.join(cache, `${statusCode}.jpg`);
+
+      const fileStream = fs.createWriteStream(imagePath);
+
+      req.pipe(fileStream);
+
+      req.on('end', () => {
+        res.writeHead(201, { 'Content-Type': 'text/plain' });
+        res.end('Created');
+      });
+
+      req.on('error', (err) => {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end(`Error: ${err.message}`);
+      });
+    } else {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Bad Request');
+    }
   } else {
     res.writeHead(405, { 'Content-Type': 'text/plain' });
     res.end('Method Not Allowed');
