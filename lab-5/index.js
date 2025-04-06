@@ -22,7 +22,7 @@ if (!fs.existsSync(cache)) {
   process.exit(1);
 }
 
-const server = http.createServer(async (req, res) => {
+const server = http.createServer((req, res) => {
   const urlParts = req.url.split('/');
   const statusCode = urlParts[1];
 
@@ -58,6 +58,28 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end(`Error: ${err.message}`);
       });
+    } else {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Bad Request');
+    }
+  } else if (req.method === 'DELETE') {
+    if (statusCode) {
+      const imagePath = path.join(cache, `${statusCode}.jpg`);
+
+      if (fs.existsSync(imagePath)) {
+        fs.unlink(imagePath, (err) => {
+          if (err) {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end(`Error: ${err.message}`);
+          } else {
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.end('Deleted');
+          }
+        });
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not Found');
+      }
     } else {
       res.writeHead(400, { 'Content-Type': 'text/plain' });
       res.end('Bad Request');
