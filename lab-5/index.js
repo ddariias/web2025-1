@@ -1,95 +1,118 @@
-const http = require('http');
+const { Command } = require("commander");
+const http = require("node:http");
 const fs = require('fs');
-const path = require('path');
-const { Command } = require('commander');
+const fsPromises = require('fs').promises;
+const path = require("path");
 
 const program = new Command();
 
 program
-  .version('1.0.0')
-  .requiredOption('-h, --host <host>', 'Server host address')
-  .requiredOption('-p, --port <port>', 'Server port')
-  .requiredOption('-c, --cache <cache>', 'Path to cache directory')
-  .parse(process.argv);
+    .requiredOption("-h, --host <host>", "Specify the host")
+    .requiredOption("-p, --port <port>", "Specify the port")
+    .requiredOption("-c, --cache <path>", "Path for cached files");
 
-const { host, port, cache } = program.opts();
+program.parse(program.argv);
 
-console.log(`Server will run on: ${host}:${port}`);
-console.log(`Cache directory is: ${cache}`);
+const options = program.opts();
 
-if (!fs.existsSync(cache)) {
-  console.error(`Error: Cache directory does not exist: ${cache}`);
-  process.exit(1);
+const cachePath = path.resolve(options.cache);
+if (!fs.existsSync(cachePath)) {
+    fs.mkdirSync(cachePath, { recursive: true });
+    console.log(`Directory created: ${cachePath}`);
+} else {
+    console.log(`Directory already exists: ${cachePath}`);
 }
 
-const server = http.createServer((req, res) => {
-  const urlParts = req.url.split('/');
-  const statusCode = urlParts[1];
-
-  if (req.method === 'GET') {
-    if (statusCode) {
-      const imagePath = path.join(cache, `${statusCode}.jpg`);
-
-      if (fs.existsSync(imagePath)) {
-        res.writeHead(200, { 'Content-Type': 'image/jpeg' });
-        fs.createReadStream(imagePath).pipe(res);
-      } else {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Not Found');
-      }
-    } else {
-      res.writeHead(400, { 'Content-Type': 'text/plain' });
-      res.end('Bad Request');
+async function readFromFile(filename) {
+    const filepath = path.join(cachePath, filename);
+    try {
+        const data = await fsPromises.readFile(filepath);
+        return data;
+    } catch (error) {
+        console.error("Error reading file:", error);
+        return null;
     }
-  } else if (req.method === 'PUT') {
-    if (statusCode) {
-      const imagePath = path.join(cache, `${statusCode}.jpg`);
+}
 
-      const fileStream = fs.createWriteStream(imagePath);
-
-      req.pipe(fileStream);
-
-      req.on('end', () => {
-        res.writeHead(201, { 'Content-Type': 'text/plain' });
-        res.end('Created');
-      });
-
-      req.on('error', (err) => {
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end(`Error: ${err.message}`);
-      });
-    } else {
-      res.writeHead(400, { 'Content-Type': 'text/plain' });
-      res.end('Bad Request');
+async function writeToFile(filename, data) {
+    const filepath = path.join(cachePath, filename);
+    try {
+        await fsPromises.writeFile(filepath, data);
+        console.log(`File written: ${filepath}`);
+    } catch (error) {
+        console.error("Error writing file:", error);
     }
-  } else if (req.method === 'DELETE') {
-    if (statusCode) {
-      const imagePath = path.join(cache, `${statusCode}.jpg`);
+}
 
-      if (fs.existsSync(imagePath)) {
-        fs.unlink(imagePath, (err) => {
-          if (err) {
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end(`Error: ${err.message}`);
-          } else {
-            res.writeHead(200, { 'Content-Type': 'text/plain' });
-            res.end('Deleted');
-          }
-        });
-      } else {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Not Found');
-      }
-    } else {
-      res.writeHead(400, { 'Content-Type': 'text/plain' });
-      res.end('Bad Request');
+const server = http.createServer(async (req, res) => {
+    const statusCode = req.url.slice(1); 
+    const filename = `${statusCode}.jpg`;
+    const filePath = path.join(cachePath, filename);
+
+    if (statusCode === '') {
+        res.writeHead(200, { "Content-Type": "text/plain" });
+        res.end("Welcome to the server");
+        console.log(`[${req.method}] / → 200 OK (Welcome message)`);
+        return;
     }
-  } else {
-    res.writeHead(405, { 'Content-Type': 'text/plain' });
-    res.end('Method Not Allowed');
-  }
+
+    switch (req.method) {
+        case "GET":
+            if (fs.existsSync(filePath)) {
+                const image = await readFromFile(filename);
+                res.writeHead(200, { "Content-Type": "image/jpeg" });
+                res.end(image);
+                console.log(`[GET] /${statusCode} → 200 OK (Image sent)`);
+            } else {
+                res.writeHead(404, { "Content-Type": "text/plain" });
+                res.end("Not Found");
+                console.log(`[GET] /${statusCode} → 404 Not Found`);
+            }
+            return;
+
+        case "PUT":
+            let body = [];
+            req.on('data', chunk => {
+                body.push(chunk);
+            });
+
+            req.on('end', async () => {
+                if (body.length > 0) {
+                    const imageBuffer = Buffer.concat(body);
+                    await writeToFile(filename, imageBuffer);
+                    res.writeHead(201, { "Content-Type": "text/plain" });
+                    res.end("Created and saved the image");
+                    console.log(`[PUT] /${statusCode} → 201 Created (Image saved)`);
+                } else {
+                    res.writeHead(400, { "Content-Type": "text/plain" });
+                    res.end("No image data provided");
+                    console.log(`[PUT] /${statusCode} → 400 Bad Request (No data)`);
+                }
+            });
+            return;
+
+        case "DELETE":
+            if (fs.existsSync(filePath)) {
+                await fsPromises.unlink(filePath);
+                res.writeHead(200, { "Content-Type": "text/plain" });
+                res.end("File deleted successfully");
+                console.log(`[DELETE] /${statusCode} → 200 OK (File deleted)`);
+            } else {
+                res.writeHead(404, { "Content-Type": "text/plain" });
+                res.end("Not Found");
+                console.log(`[DELETE] /${statusCode} → 404 Not Found`);
+            }
+            return;
+
+        default:
+            res.writeHead(405, { "Content-Type": "text/plain" });
+            res.end("Method Not Allowed");
+            console.log(`[${req.method}] /${statusCode} → 405 Method Not Allowed`);
+            return;
+    }
 });
 
-server.listen(port, host, () => {
-  console.log(`Server running at http://${host}:${port}/`);
+
+server.listen(options.port, options.host, () => {
+    console.log(`Server is running at http://${options.host}:${options.port}`);
 });
