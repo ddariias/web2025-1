@@ -8,10 +8,15 @@ const PORT = 3000;
 const NOTES_DIR = path.join(__dirname, 'notes');
 const upload = multer(); 
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
+
 app.use(express.json()); 
 app.use(express.text()); 
 app.use(express.urlencoded({ extended: true })); 
 app.use(express.static('public')); 
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 if (!fs.existsSync(NOTES_DIR)) {
   fs.mkdirSync(NOTES_DIR);
