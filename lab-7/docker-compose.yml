@@ -1,9 +1,24 @@
-version: "3"
+version: '3.8'
+
 services:
   app:
     build: .
     ports:
       - "3000:3000"
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URL=mongodb://mongo:27017/mydatabase
+
+  mongo:
+    image: mongo:7
+    restart: always
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_DATABASE: mydatabase
     volumes:
-      - .:/app
-    restart: unless-stopped
+      - mongo-data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+
+volumes:
+  mongo-data:
