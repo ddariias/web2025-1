@@ -1,0 +1,145 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+      "title": "Notes API",
+      "version": "1.0.0",
+      "description": "Note storage service"
+    },
+    "paths": {
+      "/notes/{name}": {
+        "get": {
+          "summary": "Get a note by name",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "name",
+              "required": true,
+              "schema": { "type": "string" }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Ok",
+              "content": {
+                "text": {
+                  "schema": { "type": "string" }
+                }
+              }
+            },
+            "404": { "description": "Not found" }
+          }
+        },
+        "put": {
+          "summary": "Update note",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "name",
+              "required": true,
+              "schema": { "type": "string" }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "text": { "type": "string" }
+                  },
+                  "required": ["text"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Ok" },
+            "404": { "description": "Not found" }
+          }
+        },
+        "delete": {
+          "summary": "Delete note",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "name",
+              "required": true,
+              "schema": { "type": "string" }
+            }
+          ],
+          "responses": {
+            "200": { "description": "Ok" },
+            "404": { "description": "Not found" }
+          }
+        }
+      },
+      "/notes": {
+        "get": {
+          "summary": "Get a list of all notes",
+          "responses": {
+            "200": {
+              "description": "Ok",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "text": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/write": {
+        "post": {
+          "summary": "Create a new note",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "note_name": { "type": "string" },
+                    "note": { "type": "string" }
+                  },
+                  "required": ["note_name", "note"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": { "description": "Created" },
+            "400": { "description": "Bad request" }
+          }
+        }
+      },
+      "/UploadForm.html": {
+        "get": {
+          "summary": "HTML form for uploading a note",
+          "responses": {
+            "200": {
+              "description": "Ok",
+              "content": {
+                "text/html": {
+                  "schema": { 
+                    "type": "string",
+                    "example": "<!DOCTYPE html><html><body><form>...</form></body></html>"
+                 }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
